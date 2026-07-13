@@ -62,14 +62,19 @@ From whatever code you find, determine:
 
 Infer from usage, not from codebooks alone. If no consuming code exists yet
 for `<Name>` — the grep turns up nothing and the user confirms there's no
-merge/cleaning code to look at — invoke the `grilling` skill
-(`mattpocock-skills:grilling`) instead of a single flat question: walk the
-user through every ID-like variable pair across the parsed files one at a
-time, proposing your best-guess relationship (same population possibly
+merge/cleaning code to look at — check whether `mattpocock-skills:grilling`
+appears in the available-skills list before relying on it (it's a separate
+plugin, not bundled with this skill, so it may not be installed for every
+user/team). If it's available, invoke it instead of a single flat question:
+walk the user through every ID-like variable pair across the parsed files one
+at a time, proposing your best-guess relationship (same population possibly
 renamed, subset of another file's pool, or independent) from name similarity
 as the recommended answer, and wait for confirmation or correction before
 moving to the next pair. Do not proceed to step 5 until every pair has been
-resolved this way.
+resolved this way. If it's *not* available, fall back to asking the same
+question directly, one pair at a time in the same manner, and mention once in
+the final report that installing the `mattpocock` plugin
+(`mattpocock-skills:grilling`) would make this step more thorough.
 
 If code exists but still doesn't clarify a relationship between two files, do
 **not** guess — treat that pair as independent ID pools and say so explicitly
