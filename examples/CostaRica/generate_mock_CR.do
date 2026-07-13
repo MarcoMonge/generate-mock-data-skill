@@ -34,6 +34,24 @@ global mockdir "raw_data/CostaRica/mock"
 capture mkdir "raw_data/CostaRica"
 capture mkdir "${mockdir}"
 
+* Lista de codigos ISIC Rev.4 reales (4 digitos), usada para samplear
+* firm_ciiu4/ciiu4_<yr> con un dominio de valores realista -- no solo el tipo
+* (str4 numerico) sino tambien el rango real de divisiones 01-99 (agro,
+* manufactura, comercio, servicios, etc.), del que depende el downstream
+* (1-prepare_data.do: clasificacion RD/KIS por sector_2d). Ver gotcha #10 en
+* references/gotchas.md.
+capture mkdir temp
+preserve
+import delimited "raw_external_data/classif/ISIC_Rev_4_english_structure.txt", ///
+	delimiters(",") stringcols(1) varnames(1) clear
+rename *, lower
+keep if length(code)==4 & regexm(code, "^[0-9]+$")
+keep code
+gen long _isic_idx = _n
+global n_isic4 = _N
+save "temp/isic4_codes.dta", replace
+restore
+
 global years_cr "2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019"
 
 * Tamaños reales tomados de "Observations:" en cada codebook
@@ -154,7 +172,14 @@ program define gen_revec_group
 		gen str5 ae_`yr' = "AE" + string(1 + floor(139 * runiform()), "%03.0f")
 		replace ae_`yr' = "" if u_`yr' < 894/${N_revec_group}
 
-		gen str4 ciiu4_`yr' = string(111 + floor(9889 * runiform()), "%04.0f")
+		* codigo ISIC Rev.4 real, samplado de temp/isic4_codes.dta (ver bloque
+		* de carga al inicio del archivo) en vez de un rango numerico
+		* arbitrario -- necesario para que floor(code/100) cubra las 99
+		* divisiones reales, no solo un sub-rango angosto (gotcha #10)
+		gen long _isic_idx = ceil(${n_isic4} * runiform())
+		merge m:1 _isic_idx using "temp/isic4_codes.dta", nogen keep(master match) keepusing(code)
+		rename code ciiu4_`yr'
+		drop _isic_idx
 		replace ciiu4_`yr' = "" if u_`yr' < 1035/${N_revec_group}
 
 		gen str2 cantidad_actividades`yr' = string(1 + floor(9 * runiform()), "%1.0f")
