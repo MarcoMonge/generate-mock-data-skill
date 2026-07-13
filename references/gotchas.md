@@ -159,3 +159,24 @@ draw from that list (e.g. via a `merge m:1 <random index>` against an
 indexed copy of the list) instead of synthesizing a numeric ID. This
 preserves both the type *and* the real category spread that downstream
 classification logic depends on.
+
+## 11. Order-biased subset sampling can silently empty downstream cells
+
+When one file or flag is a subset of another population (foreign firms,
+treated firms, SEZ firms, special firms, etc.), never create it by sorting on
+an existing order and taking the first N rows. Earlier merges, ID-pool builds,
+or reference-list joins can leave the dataset ordered by an unrelated domain
+such as sector, geography, or ID range. The subset will still have the right
+row count and valid IDs, but downstream tables/regressions can silently lose
+variation: e.g. all treated firms land outside manufacturing, so a
+manufacturing-only regression reports coefficients as `0.000` with standard
+errors `(.)` instead of throwing an error.
+
+**Fix**: create a fresh random variable immediately before subset selection,
+sort on that random variable (or use an explicit random rank), then keep or
+flag the target number of rows. When downstream code explicitly analyzes
+broad domains such as sector, manufacturing, KIS/R&D class, region, or year,
+tab the subset flag against those domains during self-verification. If an
+important domain has zero subset support and the intended mock is supposed to
+exercise that branch, redraw the subset with simple stratification or quotas
+over the broad domain before saving outputs.
