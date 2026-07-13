@@ -60,10 +60,20 @@ From whatever code you find, determine:
 - Which files are a subset of another file's ID pool (e.g. a "foreign firms"
   or "special firms" file filtered from a larger firm-level file).
 
-Infer from usage, not from codebooks alone. If no consuming code can be found
-or the user doesn't know of any, or the code that exists doesn't clarify a
-relationship between two files, do **not** guess — treat that pair as
-independent ID pools and say so explicitly in the final report.
+Infer from usage, not from codebooks alone. If no consuming code exists yet
+for `<Name>` — the grep turns up nothing and the user confirms there's no
+merge/cleaning code to look at — invoke the `grilling` skill
+(`mattpocock-skills:grilling`) instead of a single flat question: walk the
+user through every ID-like variable pair across the parsed files one at a
+time, proposing your best-guess relationship (same population possibly
+renamed, subset of another file's pool, or independent) from name similarity
+as the recommended answer, and wait for confirmation or correction before
+moving to the next pair. Do not proceed to step 5 until every pair has been
+resolved this way.
+
+If code exists but still doesn't clarify a relationship between two files, do
+**not** guess — treat that pair as independent ID pools and say so explicitly
+in the final report.
 
 ### 4. Classify string variables: free text vs. categorical
 For every string variable: `unique-value count / Observations` from the
