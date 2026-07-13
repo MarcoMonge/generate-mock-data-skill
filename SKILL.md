@@ -102,6 +102,12 @@ Write one Stata script for the whole batch that:
   every file's IDs are drawn from — or checked against — that same pool.
   Generate files in dependency order: any file whose IDs are a subset of
   another file's pool must be generated *after* that pool exists.
+- For any subset file or subset flag (foreign firms, treated firms, special
+  firms, SEZ firms, etc.), select IDs by an explicit random draw from the
+  eligible pool, never by taking the first N rows after merges/sorts. If
+  downstream code classifies firms by sector, industry, region, year, or
+  another generated domain, make the subset draw preserve nonzero support in
+  the relevant broad domains when feasible; see `references/gotchas.md`.
 - One `program define gen_<fname>` block per dataset, each generating at full
   scale (`N` = that codebook's `Observations:`), every variable synthesized
   from its own codebook block only (type, range/percentiles or tabulation,
@@ -127,6 +133,11 @@ Don't trust a clean exit alone — check explicitly and report each:
 - **Referential integrity**: for every subset/superset relationship inferred
   in step 3, confirm the subset file's IDs actually exist in the superset's
   pool (merge and check for unmatched-from-subset).
+- **Subset support**: for every generated subset/flag used downstream, tab it
+  against important generated classification domains found in the consuming
+  code (sector/manufacturing/KIS/R&D/region/year/etc.). If the subset has zero
+  support in a domain that downstream tables or regressions explicitly target,
+  fix the subset sampling and rerun instead of reporting a clean pass.
 
 ### 8. Report
 Files generated and row counts; any borderline free-text classifications
