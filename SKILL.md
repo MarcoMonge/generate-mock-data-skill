@@ -1,6 +1,6 @@
 ---
 name: generate-mock-data
-description: Generates a co-aligned synthetic (mock) dataset bundle for a country from a directory of codebooks, replicating schema, scale, and cross-file ID relationships without touching any real data. Use when asked to generate mock/synthetic raw data for a country, or to regenerate a mock bundle after that country's codebooks change. Invoke with /generate-mock-data <codebooks_dir> <output_dir>.
+description: Generates a co-aligned synthetic (mock) dataset bundle for a country from a directory of codebooks, replicating schema, scale, and cross-file ID relationships without touching any real data. Use when asked to generate mock/synthetic raw data for a country, or to regenerate a mock bundle after that country's codebooks change. Invoke with /generate-mock-data CODEBOOKS_DIR OUTPUT_DIR.
 ---
 
 # generate-mock-data
@@ -59,6 +59,12 @@ From whatever code you find, determine:
   `_group`/`_g` suffix meaning "the same population, group level").
 - Which files are a subset of another file's ID pool (e.g. a "foreign firms"
   or "special firms" file filtered from a larger firm-level file).
+- Which string variables are later coerced to numeric (`destring`, `real()`,
+  numeric comparisons, joins to classification crosswalks), and which
+  variables define downstream domains or sample restrictions (sector,
+  manufacturing, KIS/R&D class, region, year, treated/FDI/superstar flags,
+  policy dummies, etc.). Use this to preserve value *shape* and joint support,
+  not just column types.
 
 Infer from usage, not from codebooks alone. If no consuming code exists yet
 for `<Name>` — the grep turns up nothing and the user confirms there's no
@@ -108,6 +114,14 @@ Write one Stata script for the whole batch that:
   downstream code classifies firms by sector, industry, region, year, or
   another generated domain, make the subset draw preserve nonzero support in
   the relevant broad domains when feasible; see `references/gotchas.md`.
+- When downstream code runs subgroup tables or regressions, make treatment/
+  subset flags and key outcomes vary jointly inside the relevant broad cells
+  where feasible (for example treated and untreated firms across years and
+  sector buckets). Prefer simple stratified random draws or quota floors over
+  pure Bernoulli flags when a rare flag would otherwise leave empty cells.
+  The goal is not realistic causal structure; it is enough variation for the
+  pipeline to exercise each branch without producing degenerate all-zero or
+  all-missing analysis outputs.
 - One `program define gen_<fname>` block per dataset, each generating at full
   scale (`N` = that codebook's `Observations:`), every variable synthesized
   from its own codebook block only (type, range/percentiles or tabulation,
@@ -138,6 +152,19 @@ Don't trust a clean exit alone — check explicitly and report each:
   code (sector/manufacturing/KIS/R&D/region/year/etc.). If the subset has zero
   support in a domain that downstream tables or regressions explicitly target,
   fix the subset sampling and rerun instead of reporting a clean pass.
+- **Analysis variation smoke checks**: for variables that downstream code uses
+  as treatment flags, subgroup filters, dependent variables, or key regressors,
+  confirm they are not constant or all missing in the generated raw data after
+  applying the relevant broad filters found in the consuming code. When
+  feasible without running the full pipeline, create lightweight Stata checks
+  that mimic those filters and report cell counts by year/domain/treatment.
+- **Optional post-pipeline inspection**: running a full cleaning/integration
+  pipeline remains out of scope for this skill, but if the user independently
+  runs it or explicitly asks for output inspection, scan logs and generated
+  result tables for `r()` errors, `no observations`, all-zero/all-missing
+  outputs, and Stata regression standard errors reported as `(.)`. Treat those
+  as signals to improve the mock generator's joint support, not as a clean
+  pass merely because execution completed.
 
 ### 8. Report
 Files generated and row counts; any borderline free-text classifications

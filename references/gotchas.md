@@ -180,3 +180,26 @@ tab the subset flag against those domains during self-verification. If an
 important domain has zero subset support and the intended mock is supposed to
 exercise that branch, redraw the subset with simple stratification or quotas
 over the broad domain before saving outputs.
+
+## 12. A clean full-pipeline run can still leave degenerate analysis outputs
+
+It is possible for the raw mock data to pass row-count, merge-integrity, and
+pipeline execution checks while final tables or regressions still contain
+uninformative cells. In the Costa Rica mock run, the end-to-end
+`Master.do` completed, but some regression tables reported standard errors as
+`(.)`, a symptom of too little within-cell variation, collinearity, or tiny
+subgroup samples rather than a runtime failure. This is especially likely when
+a rare flag (FDI, treated, SEZ, superstar, policy exposure, etc.) is assigned
+independently of the domains used later for subgroup analysis.
+
+**Fix**: after identifying downstream domains in the consuming code, generate
+rare flags with simple stratification or quota floors across the broad cells
+that matter (year, sector bucket, manufacturing/non-manufacturing, KIS/R&D
+class, region, etc.) when feasible. Preserve both treated and untreated support
+and nonmissing outcomes inside targeted cells. During self-verification, add
+lightweight diagnostics for the raw data that tab key flags by those cells and
+check that key outcomes/regressors are not constant or all missing under the
+same broad filters. If the user later runs the full pipeline, inspect logs and
+result tables for `(.)` standard errors, `no observations`, all-zero outputs,
+or all-missing generated variables; use those findings to tighten the mock's
+joint support rather than treating "no Stata error" as sufficient.
